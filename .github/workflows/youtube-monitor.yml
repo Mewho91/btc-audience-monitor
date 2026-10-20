@@ -3,7 +3,7 @@ name: BTC Audience Monitor
 
 on:
   schedule:
-    - cron: '00 13 * * *'
+    - cron: '17 13 * * *'
       timezone: 'Europe/Warsaw'
   workflow_dispatch:
 
