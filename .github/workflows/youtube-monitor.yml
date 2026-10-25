@@ -1,4 +1,3 @@
-
 name: BTC Audience Monitor
 
 on:
@@ -9,10 +8,20 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
 
 jobs:
   monitor:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Pobierz pliki
@@ -31,12 +40,33 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python monitor.py --collect
 
-      - name: Zapisz wyniki i wykres
+      - name: Zapisz wyniki do repozytorium
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/monitor.sqlite index.html export.csv
+
           if ! git diff --cached --quiet; then
             git commit -m "Aktualizacja danych YouTube"
             git push
+          else
+            echo "Brak zmian do zapisania."
           fi
+
+      - name: Przygotuj GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Przygotuj pliki strony
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp export.csv _site/
+
+      - name: Wyślij stronę do GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Opublikuj GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
